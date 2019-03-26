@@ -38,15 +38,15 @@ jobs:
     docker:
        - image: circleci/ruby:2.4.1
     environment:
-      INDEXES_BRANCH: indexes-forced
+      INDEXES_BRANCH: indexes-forced-no-rebase
     steps:
       - queue/until_front_of_line
       - restore_cache:
           keys:
-            - forced-spec-indexes-source-{{ .Branch }}-{{ .Revision }}
-            - forced-spec-indexes-source-{{ .Branch }}-
-            - forced-spec-indexes-source-
-      - checkout-indexes
+            - forced-no-rebase-spec-indexes-source-{{ .Branch }}-{{ .Revision }}
+            - forced-no-rebase-spec-indexes-source-{{ .Branch }}-
+            - forced-no-rebase-spec-indexes-source-
+      - checkout
       - run:
           name: Git config
           command: |
@@ -56,21 +56,17 @@ jobs:
           fingerprints:
             - "39:12:25:06:c2:71:00:c6:7c:fe:40:a6:e7:0e:18:ed"
       - run:
-          name: Rebase latest changes
-          command: |
-            echo 'export LAST_INDEXED_COMMIT="$(git rev-parse @~)"' >> $BASH_ENV
-            git rebase "$CIRCLE_SHA1"
-      - run:
           name: Generate indexes for the changes
           command: |
-            ./Scripts/add_incremental_index.sh origin/$INDEXES_BRANCH $CIRCLE_SHA1 | tee /dev/tty | xargs git add
+            ./Scripts/add_indexes.sh
       - run:
           name: Ammend commit and force push the changes
           command: |
-            git commit --amend --date="$(date -R)" --no-edit --quiet
-            git push origin $INDEXES_BRANCH --force-with-lease
+            git add -A
+            git commit -m "Add CDN indexes for all pods"
+            git push origin $INDEXES_BRANCH --force
       - save_cache:
-          key: forced-spec-indexes-source-{{ .Branch }}-{{ .Revision }}
+          key: forced-no-rebase-spec-indexes-source-{{ .Branch }}-{{ .Revision }}
           paths:
             - ".git"
 
@@ -80,4 +76,4 @@ workflows:
       - update-indexes:
           filters:
             branches:
-              only: master-forced
+              only: master-forced-no-rebase
