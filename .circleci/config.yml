@@ -34,7 +34,7 @@ jobs:
           command: |
             git add -A
             git commit --quiet -m "Add CDN indexes for all pods"
-            git push origin $INDEXES_BRANCH --force
+            git push origin $CIRCLE_BRANCH:$INDEXES_BRANCH --force
       - save_cache:
           key: forced-no-rebase-spec-indexes-source-{{ .Branch }}-{{ .Revision }}
           paths:
