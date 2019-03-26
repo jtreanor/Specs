@@ -3,6 +3,33 @@ version: 2.1
 orbs:
   queue: eddiewebb/queue@1.1.2
 
+commands:
+  checkout-specs:
+    steps:
+      - run:
+          name: Checkout
+          command: |
+            mkdir -p ~/.ssh
+
+            echo 'github.com ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAq2A7hRGmdnm9tUDbO9IDSwBK6TbQa+PXYPCPy6rbTrTtw7PHkccKrpp0yVhp5HdEIcKr6pLlVDBfOLX9QUsyCOV0wzfjIJNlGEYsdlLJizHhbn2mUjvSAHQqZETYP81eFzLQNnPHt4EVVUh7VfDESU84KezmD5QlWpXLmvU31/yMf+Se8xhHTvKSCZIFImWwoG6mbUoWf9nzpIoaSjB+weqqUUmpaaasXVal72J+UX2B+2RPW3RcT0eOzQgqlJL3RKrTJvdsjE3JEAvGq3lGHSZXy28G3skua2SmVi/w4yCE6gbODqnTWlg7+wC604ydGXA8VJiS5ap43JXiUFFAaQ==' >> ~/.ssh/known_hosts
+
+            if [ -e "/home/circleci/project/.git" ]
+            then
+              cd "/home/circleci/project"
+              git remote set-url origin "$CIRCLE_REPOSITORY_URL" || true
+
+              echo "Fetching $CIRCLE_BRANCH ..."
+              git fetch --force origin "$CIRCLE_BRANCH:remotes/origin/$CIRCLE_BRANCH"
+
+              echo "Resetting to origin/$CIRCLE_BRANCH"
+              git reset --hard "origin/$CIRCLE_BRANCH"
+            else
+              mkdir -p "/home/circleci/project"
+              cd "/home/circleci/project"
+              echo "Cloning $CIRCLE_BRANCH ..."
+              git clone "$CIRCLE_REPOSITORY_URL" --single-branch --branch "$CIRCLE_BRANCH" .
+            fi
+
 jobs:
   update-indexes:
     docker:
@@ -13,12 +40,12 @@ jobs:
       - queue/until_front_of_line
       - restore_cache:
           keys:
-            - forced-no-rebase-spec-indexes-source-{{ .Branch }}-{{ .Revision }}
-            - forced-no-rebase-spec-indexes-source-{{ .Branch }}-
-            - forced-no-rebase-spec-indexes-source-
-      - checkout
+            - forced-no-rebase-spec-indexes-source-v2-{{ .Branch }}-{{ .Revision }}
+            - forced-no-rebase-spec-indexes-source-v2-{{ .Branch }}-
+            - forced-no-rebase-spec-indexes-source-v2-
+      - checkout-specs
       - run:
-          name: Generate indexes for the changes
+          name: Generate indexes for all pods
           command: |
             ./Scripts/add_indexes.sh
       - run:
@@ -35,11 +62,8 @@ jobs:
             git add -A
             git commit --quiet -m "Add CDN indexes for all pods"
             git push origin $CIRCLE_BRANCH:$INDEXES_BRANCH --force
-      - run:
-          name: Reset indexes commit for up to date caching
-          command: git reset --hard HEAD~1
       - save_cache:
-          key: forced-no-rebase-spec-indexes-source-{{ .Branch }}-{{ .Revision }}
+          key: forced-no-rebase-spec-indexes-source-v2-{{ .Branch }}-{{ .Revision }}
           paths:
             - ".git"
 
