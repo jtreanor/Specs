@@ -63,7 +63,7 @@ jobs:
           name: Ammend commit and force push the changes
           command: |
             git add -A
-            git commit -m "Add CDN indexes for all pods"
+            git commit --quiet -m "Add CDN indexes for all pods"
             git push origin $INDEXES_BRANCH --force
       - save_cache:
           key: forced-no-rebase-spec-indexes-source-{{ .Branch }}-{{ .Revision }}
